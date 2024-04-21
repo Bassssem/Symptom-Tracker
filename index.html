@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Symptom Tracker</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<style>
+  body {
+  font-family: Arial, sans-serif;
+  margin: 0;
+  padding: 0;
+  background-color: #f4f4f4;
+}
+#container {
+  max-width: 600px;
+  margin: 20px auto;
+  background-color: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+h2 {
+  font-size: 24px;
+  margin-bottom: 20px;
+  color: #333;
+}
+label {
+  font-size: 16px;
+  color: #555;
+}
+input[type="number"], input[type="text"] {
+  width: 100%;
+  padding: 10px;
+  margin-bottom: 20px;
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  font-size: 16px;
+  box-sizing: border-box;
+}
+button {
+  padding: 10px 20px;
+  background-color: #007bff;
+  color: #fff;
+  border: none;
+  border-radius: 4px;
+  font-size: 16px;
+  cursor: pointer;
+}
+button:hover {
+  background-color: #0056b3;
+}
+#summary {
+  margin-top: 20px;
+  font-size: 18px;
+  color: #555;
+}
+canvas {
+  margin-top: 20px;
+}
+
+</style>
+</head>
+<body>
+<symptom-tracker></symptom-tracker>
+
+<script>
+class SymptomTracker extends HTMLElement {
+  constructor() {
+    super();
+    this.attachShadow({ mode: 'open' });
+    this.shadowRoot.innerHTML = `
+      <h2>Symptom Tracker</h2>
+      <div>
+        <label for="pain">Pain Level (1-10):</label>
+        <input type="number" id="pain" min="1" max="10">
+      </div>
+      <div>
+        <label for="fatigue">Fatigue Level (1-10):</label>
+        <input type="number" id="fatigue" min="1" max="10">
+      </div>
+      <div>
+        <label for="mood">Mood:</label>
+        <input type="text" id="mood">
+      </div>
+      <button id="submitBtn">Submit</button>
+      <div id="summary"></div>
+      <canvas id="chart"></canvas>
+    `;
+
+    this.submitBtn = this.shadowRoot.getElementById('submitBtn');
+    this.summaryDiv = this.shadowRoot.getElementById('summary');
+    this.chartCanvas = this.shadowRoot.getElementById('chart');
+    this.submitBtn.addEventListener('click', this.handleSubmit.bind(this));
+
+    this.chart = new Chart(this.chartCanvas, {
+      type: 'line',
+      data: {
+        labels: [],
+        datasets: [{
+          label: 'Pain',
+          data: [],
+          borderColor: 'red',
+          fill: false
+        }, {
+          label: 'Fatigue',
+          data: [],
+          borderColor: 'blue',
+          fill: false
+        }]
+      },
+      options: {
+        scales: {
+          y: {
+            beginAtZero: true
+          }
+        }
+      }
+    });
+  }
+
+  handleSubmit() {
+    const pain = this.shadowRoot.getElementById('pain').value;
+    const fatigue = this.shadowRoot.getElementById('fatigue').value;
+    const mood = this.shadowRoot.getElementById('mood').value;
+
+    const data = { pain, fatigue, mood };
+    this.saveData(data);
+    this.updateSummary(data);
+    this.updateChart(data);
+  }
+
+  saveData(data) {
+    let existingData = JSON.parse(localStorage.getItem('symptomData')) || [];
+    existingData.push(data);
+    localStorage.setItem('symptomData', JSON.stringify(existingData));
+  }
+
+  updateSummary(data) {
+    this.summaryDiv.textContent = `Pain: ${data.pain}, Fatigue: ${data.fatigue}, Mood: ${data.mood}`;
+  }
+
+  updateChart(data) {
+    this.chart.data.labels.push(new Date().toLocaleString());
+    this.chart.data.datasets[0].data.push(data.pain);
+    this.chart.data.datasets[1].data.push(data.fatigue);
+    this.chart.update();
+  }
+}
+
+customElements.define('symptom-tracker', SymptomTracker);
+</script>
+</body>
+</html>
